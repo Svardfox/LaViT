@@ -29,10 +29,7 @@ LaViT training uses **image–question–answer** triplets together with **V\_to
 
 - **Step 1: Build Visual-CoT trajectories from raw multimodal data**
   - Use the scripts under `data_construction/viscot/` (e.g. `extract_viscot_trajectories.py`, `extract_viscot_vtop.py`).
-  - Typical outputs:
-    - Image paths (e.g. under `/root/autodl-tmp/ViLR/data/Visual-CoT-full`)
-    - Step-by-step reasoning texts
-    - Paths to V\_top tensors and attention JSONs.
+
 
 - **Step 2: Extract attention trajectories with a teacher model**
   - Use `data_construction/extraction/teacher_traj_extractor_attention.py`, which:
@@ -64,8 +61,8 @@ The one-stage setting uses `training_stage=0` and jointly optimizes **CE loss + 
 
 - **Script**: `training/scripts/run_lavit_train.sh`
 - **Key environment variables (edit at the top of the script)**:
-  - `DATA_JSON`: enriched JSON (e.g. `/root/autodl-tmp/ViLR/trajectories/trajectories_vtop_enriched_all_final.json`)
-  - `IMAGE_ROOT`: image directory (e.g. `/root/autodl-tmp/ViLR/data/Visual-CoT-full`)
+  - `DATA_JSON`: enriched JSON
+  - `IMAGE_ROOT`: image directory
   - `VTOP_DIR`, `ATTN_DIR`: directories for V\_top and attention features
   - `MODEL_PATH`: pretrained backbone (local path or HF Hub ID)
 - **Default config**:
