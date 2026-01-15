@@ -137,14 +137,14 @@ Internally this script calls `training/src/train_text_only.py`, so you can direc
 
 ### Evaluation
 
-Evaluation code lives in `training/src/evaluation/` and has two entry points:
+Evaluation code lives in `evaluation/utils/` and has two entry points:
 
 - Base model: `run_eval_base.py` (evaluates the original Qwen2.5-VL model)
 - LaViT model: `run_eval.py` (evaluates LaViT checkpoints with `<lvr*>` tokens)
 
 #### Evaluating LaViT
 
-Entry: `training/src/evaluation/run_eval.py`. Key arguments:
+Entry: `evaluation/utils/run_eval.py`. Key arguments:
 
 - `--checkpoint`: LaViT checkpoint path (e.g. Stage 2 output of two-stage training)
 - `--dataset`: dataset name, e.g.:
@@ -162,8 +162,8 @@ Entry: `training/src/evaluation/run_eval.py`. Key arguments:
 Example (MMVP):
 
 ```bash
-cd training/src
-python evaluation/run_eval.py \
+cd evaluation/utils
+python run_eval.py \
   --checkpoint /path/to/lavit_checkpoint \
   --dataset mmvp \
   --data_root /path/to/MMVP \
@@ -173,7 +173,7 @@ python evaluation/run_eval.py \
 
 #### Evaluating the Base Qwen2.5-VL Model
 
-Entry: `training/src/evaluation/run_eval_base.py`, which evaluates the original backbone with the same adapter interface.
+Entry: `evaluation/utils/run_eval_base.py`, which evaluates the original backbone with the same adapter interface.
 
 Key arguments:
 

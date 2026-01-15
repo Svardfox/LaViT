@@ -1,30 +1,22 @@
-#!/bin/bash
 set -x
-
-# ============================================================================
-# Text-Only SFT Training Script (Ablation Study)
-# ============================================================================
-# This script trains a standard Qwen2.5-VL model with text-only supervision.
-# NO <lvr> tokens, NO v_top supervision, NO trajectory supervision.
-# This serves as a baseline/ablation study to compare against ViLR method.
-# ============================================================================
-
-# Ensure we are in the training directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT"
-
-export MODEL_PATH="/root/autodl-tmp/my_qwen_model/Qwen2.5-VL-3B-Instruct"
-export DATA_JSON="/root/autodl-tmp/ViLR/trajectories/trajectories_vtop_enriched_correct_only.json"
-export IMAGE_ROOT="/root/autodl-tmp/ViLR/data/Visual-CoT-full"
-export OUTPUT_DIR="/root/autodl-tmp/ViLR/training/checkpoints/text_only_sft_baseline"
-
-# Check if model path exists, else use HF Hub ID
-if [ ! -d "$MODEL_PATH" ]; then
-    echo "Local model not found at $MODEL_PATH, using HF ID Qwen/Qwen2.5-VL-3B-Instruct"
-    MODEL_PATH="Qwen/Qwen2.5-VL-3B-Instruct"
+DATASET_ROOT=${DATASET_ROOT:-"$PROJECT_ROOT/../LaViT-15k"}
+if [ ! -d "$DATASET_ROOT" ]; then
+    echo "LaViT-15k dataset not found at: $DATASET_ROOT"
+    echo "Set DATASET_ROOT to the LaViT-15k directory."
+    exit 1
 fi
-
+export MODEL_PATH=${MODEL_PATH:-"Qwen/Qwen2.5-VL-3B-Instruct"}
+export DATA_JSON=${DATA_JSON:-"$DATASET_ROOT/data/metadata/lavit_15k_for_training.json"}
+export IMAGE_ROOT=${IMAGE_ROOT:-"$DATASET_ROOT/data/images"}
+export OUTPUT_DIR=${OUTPUT_DIR:-"$PROJECT_ROOT/checkpoints/text_only_sft_baseline"}
+if [ -d "$MODEL_PATH" ]; then
+    echo "Local model found at $MODEL_PATH"
+else
+    echo "Using HF ID $MODEL_PATH"
+fi
 echo "============================================"
 echo "Text-Only SFT Training (Ablation Study)"
 echo "============================================"
@@ -38,7 +30,6 @@ echo "  - NO v_top supervision"
 echo "  - NO trajectory supervision"
 echo "  - Standard text generation loss only"
 echo "============================================"
-
 python src/train_text_only.py \
     --model_name_or_path $MODEL_PATH \
     --data_json $DATA_JSON \
@@ -64,10 +55,8 @@ python src/train_text_only.py \
     --bf16 True \
     --max_samples 8765 \
     --do_train
-
 echo ""
 echo "============================================"
 echo "Training Complete!"
 echo "Checkpoint saved to: $OUTPUT_DIR"
 echo "============================================"
-
