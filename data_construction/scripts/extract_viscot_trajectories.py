@@ -39,12 +39,12 @@ def extract_answer(conversation_value: str) -> str:
     else:
         return conversation_value.strip()
 def load_viscot_data(json_path: str, max_samples: Optional[int] = None) -> List[Dict]:
-    print(f"正在加载数据文件: {json_path}")
+    print(f"Loading data from: {json_path}")
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     if max_samples is not None and max_samples > 0:
         data = data[:max_samples]
-    print(f"加载了 {len(data)} 个样本")
+    print(f"Loaded {len(data)} samples")
     return data
 def process_sample(
     sample: Dict,
@@ -71,21 +71,21 @@ def process_sample(
     try:
         image_paths = sample.get("image", [])
         if not image_paths:
-            raise ValueError("样本中没有image字段")
+            raise ValueError("No image field in sample")
         image_relative_path = image_paths[0]
         image_full_path = os.path.join(base_image_dir, image_relative_path)
         if not os.path.exists(image_full_path):
-            raise FileNotFoundError(f"图像文件不存在: {image_full_path}")
+            raise FileNotFoundError(f"Image file not found: {image_full_path}")
         conversations = sample.get("conversations", [])
         if len(conversations) < 2:
-            raise ValueError("conversations字段至少需要2个元素")
+            raise ValueError("conversations field must have at least 2 elements")
         question_raw = conversations[0].get("value", "")
         question = parse_question(question_raw)
         answer_raw = conversations[1].get("value", "")
         ground_truth = extract_answer(answer_raw)
-        print(f"  [样本 {sample.get('question_id', 'unknown')}] Ground Truth: {ground_truth}")
+        print(f"  [Sample {sample.get('question_id', 'unknown')}] Ground Truth: {ground_truth}")
         image = Image.open(image_full_path).convert("RGB")
-        print(f"  [样本 {sample.get('question_id', 'unknown')}] 生成教师步骤...")
+        print(f"  [Sample {sample.get('question_id', 'unknown')}] Generating teacher steps...")
         teacher_steps = extractor.teacher_generate_steps(
             image, question, T=steps, max_new_tokens=4096
         )
@@ -94,7 +94,7 @@ def process_sample(
         final_answer = None
         validation_explanation = None
         if enable_validation:
-            print(f"  [样本 {sample.get('question_id', 'unknown')}] 校验答案...")
+            print(f"  [Sample {sample.get('question_id', 'unknown')}] Validating answer...")
             is_answer_correct, final_answer, validation_explanation = validate_sample(
                 teacher_response=teacher_full_response,
                 ground_truth=ground_truth,
@@ -103,9 +103,9 @@ def process_sample(
                 model=validation_model,
             )
             if is_answer_correct:
-                print(f"  [样本 {sample.get('question_id', 'unknown')}] 答案校验通过")
+                print(f"  [Sample {sample.get('question_id', 'unknown')}] Answer validation passed")
             else:
-                print(f"  [样本 {sample.get('question_id', 'unknown')}] 答案校验未通过，跳过轨迹提取")
+                print(f"  [Sample {sample.get('question_id', 'unknown')}] Answer validation failed, skipping trajectory extraction")
                 return {
                     "question_id": sample.get("question_id", "unknown"),
                     "dataset": sample.get("dataset", None),
@@ -121,7 +121,7 @@ def process_sample(
                         "explanation": validation_explanation,
                     },
                     "skipped": True,
-                    "skip_reason": "答案校验未通过",
+                    "skip_reason": "Answer validation failed",
                 }
         question_id = sample.get("question_id", "unknown")
         vtop_dir = vtop_output_dir or os.path.join(output_dir, "tensors")
@@ -132,7 +132,7 @@ def process_sample(
             v_top_layer_relative_path = os.path.relpath(v_top_layer_save_path, vtop_output_dir)
         else:
             v_top_layer_relative_path = os.path.join("tensors", v_top_layer_filename)
-        print(f"  [样本 {question_id}] 提取视觉轨迹（方法: {extraction_method}）...")
+        print(f"  [Sample {question_id}] Extracting trajectory (method: {extraction_method})...")
         if extraction_method == "gradient":
             trajectory = extractor.extract_pt_per_step(
                 image=image,
@@ -159,7 +159,7 @@ def process_sample(
                 enable_v_top_layer=enable_v_top_layer,
             )
         else:
-            raise ValueError(f"未知的提取方法: {extraction_method}，支持的方法: 'gradient', 'attention'")
+            raise ValueError(f"Unknown extraction method: {extraction_method}, supported methods: 'gradient', 'attention'")
         result = {
             "question_id": question_id,
             "dataset": sample.get("dataset", None),
@@ -194,10 +194,10 @@ def process_sample(
                 "is_correct": is_answer_correct,
                 "explanation": validation_explanation,
             }
-        print(f"  [样本 {sample.get('question_id', 'unknown')}] 完成！")
+        print(f"  [Sample {sample.get('question_id', 'unknown')}] Completed!")
         return result
     except Exception as e:
-        print(f"  [样本 {sample.get('question_id', 'unknown')}] 处理失败: {str(e)}")
+        print(f"  [Sample {sample.get('question_id', 'unknown')}] Processing failed: {str(e)}")
         if torch.cuda.is_available():
             if hasattr(extractor.model, 'hf_device_map') and extractor.model.hf_device_map is not None:
                 for i in range(torch.cuda.device_count()):
@@ -267,7 +267,7 @@ def build_lavit15k_from_viscot(
     failed = 0
     skipped = 0
     for i, sample in enumerate(data):
-        print(f"\n[{i+1}/{len(data)}] 处理样本...")
+        print(f"\n[{i+1}/{len(data)}] Processing sample...")
         result = process_sample(
             sample=sample,
             extractor=extractor,
@@ -360,42 +360,42 @@ def build_lavit15k_from_viscot(
         json.dump({"results": training_results}, f, ensure_ascii=False, indent=2)
 def main():
     parser = argparse.ArgumentParser(
-        description="从Visual-CoT数据集中提取视觉轨迹"
+        description="Extract visual trajectories from Visual-CoT dataset"
     )
-    parser.add_argument("--data_file", type=str, default="./data/Visual-CoT-full/viscot_363k_lvr_formatted.json", help="Visual-CoT数据文件路径")
-    parser.add_argument("--base_image_dir", type=str, default="./data/Visual-CoT-full", help="图像文件的基础目录")
-    parser.add_argument("--max_samples", type=int, default=5, help="最大处理样本数量（None表示处理所有样本）")
-    parser.add_argument("--start_idx", type=int, default=0, help="起始样本索引（在随机打乱后应用）")
-    parser.add_argument("--random_seed", type=int, default=5, help="随机数种子，用于固定随机顺序（默认不使用随机）")
-    parser.add_argument("--shuffle", action="store_true", default=True, help="随机打乱数据顺序（需要配合 --random_seed 使用以确保可复现）")
-    parser.add_argument("--model_path", type=str, default="/root/autodl-tmp/my_qwen_model/Qwen/Qwen2.5-VL-32B-Instruct", help="模型路径")
-    parser.add_argument("--device", type=str, default="cuda", help="设备（cuda或cpu）")
+    parser.add_argument("--data_file", type=str, default="./data/Visual-CoT-full/viscot_363k_lvr_formatted.json", help="Visual-CoT data file path")
+    parser.add_argument("--base_image_dir", type=str, default="./data/Visual-CoT-full", help="Base directory for image files")
+    parser.add_argument("--max_samples", type=int, default=5, help="Maximum number of samples to process (None for all samples)")
+    parser.add_argument("--start_idx", type=int, default=0, help="Start index for processing (after shuffling)")
+    parser.add_argument("--random_seed", type=int, default=5, help="Random seed for reproducibility (default no random seed)")
+    parser.add_argument("--shuffle", action="store_true", default=True, help="Shuffle data order (requires --random_seed for reproducibility)")
+    parser.add_argument("--model_path", type=str, default="model_path", help="Teacher Model path")
+    parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--method", type=str, default="attention", choices=["gradient", "attention"], 
-                        help="提取方法: 'gradient' (梯度归因) 或 'attention' (注意力权重)")
-    parser.add_argument("--steps", type=int, default=1, help="推理步骤数")
-    parser.add_argument("--tau_grad", type=float, default=0.01, help="梯度归因的温度参数（仅用于gradient方法）")
-    parser.add_argument("--skip_markup", action="store_true", help="跳过包含<>的标记token（默认启用，仅用于gradient方法）")
-    parser.add_argument("--no_skip_markup", action="store_false", dest="skip_markup", help="禁用跳过标记token")
+                        help="Extraction method: 'gradient' (gradient attribution) or 'attention' (attention weights)")
+    parser.add_argument("--steps", type=int, default=1)
+    parser.add_argument("--tau_grad", type=float, default=0.01, help="Temperature parameter for gradient attribution (only used for gradient method)")
+    parser.add_argument("--skip_markup", action="store_true", help="Skip tokens containing <> (default enabled, only used for gradient method)")
+    parser.add_argument("--no_skip_markup", action="store_false", dest="skip_markup", help="Disable skipping markup tokens")
     parser.set_defaults(skip_markup=True)
-    parser.add_argument("--downsample", type=int, default=1, help="token抽样间隔（仅用于gradient方法）")
-    parser.add_argument("--max_tokens_per_step", type=int, default=50, help="每步最大处理token数量（仅用于gradient方法）")
-    parser.add_argument("--max_grad_calls_per_step", type=int, default=10, help="每步最大梯度计算次数（仅用于gradient方法）")
-    parser.add_argument("--aggregation_method", type=str, default="weighted_by_strength", choices=["simple_avg", "weighted_by_strength", "filter_by_threshold", "entropy_weighted"], help="聚合策略（仅用于gradient方法）")
-    parser.add_argument("--attribution_threshold", type=float, default=0.1, help="归因强度阈值（用于filter_by_threshold，仅用于gradient方法）")
-    parser.add_argument("--min_entropy", type=float, default=0.5, help="最小熵阈值（用于entropy_weighted，仅用于gradient方法）")
-    parser.add_argument("--topk", type=int, default=8, help="返回top-k个最重要的图像token索引（仅用于attention方法）")
-    parser.add_argument("--output_dir", type=str, default="./trajectories/viscot", help="输出目录")
-    parser.add_argument("--output_lavit15k_root", type=str, default=None, help="输出 LaViT-15k 结构目录")
-    parser.add_argument("--copy_images", action="store_true", default=True, help="复制图片到 LaViT-15k 目录")
+    parser.add_argument("--downsample", type=int, default=1, help="Token sampling interval (only used for gradient method)")
+    parser.add_argument("--max_tokens_per_step", type=int, default=50, help="Maximum number of tokens to process per step (only used for gradient method)")
+    parser.add_argument("--max_grad_calls_per_step", type=int, default=10, help="Maximum number of gradient calculations per step (only used for gradient method)")
+    parser.add_argument("--aggregation_method", type=str, default="weighted_by_strength", choices=["simple_avg", "weighted_by_strength", "filter_by_threshold", "entropy_weighted"], help="Aggregation method (only used for gradient method)")
+    parser.add_argument("--attribution_threshold", type=float, default=0.1, help="Attribution threshold for filter_by_threshold (only used for gradient method)")
+    parser.add_argument("--min_entropy", type=float, default=0.5, help="Minimum entropy threshold for entropy_weighted (only used for gradient method)")
+    parser.add_argument("--topk", type=int, default=8, help="Return top-k most important image token indices (only used for attention method)")
+    parser.add_argument("--output_dir", type=str, default="./trajectories/viscot", help="Output directory")
+    parser.add_argument("--output_lavit15k_root", type=str, default=None, help="Output LaViT-15k structure directory")
+    parser.add_argument("--copy_images", action="store_true", default=True, help="Copy images to LaViT-15k directory")
     parser.add_argument("--no_copy_images", action="store_false", dest="copy_images")
-    parser.add_argument("--save_every", type=int, default=50, help="定期保存metadata检查点")
-    parser.add_argument("--save_format", type=str, default="json", choices=["json", "jsonl"], help="保存格式：json（单个文件）或jsonl（每行一个样本）")
-    parser.add_argument("--enable_validation", action="store_true", default=True, help="启用答案校验（默认启用）")
-    parser.add_argument("--disable_validation", action="store_false", dest="enable_validation", help="禁用答案校验")
-    parser.add_argument("--validation_api_key", type=str, default=None, help="OpenRouter API 密钥（默认使用内置密钥）")
-    parser.add_argument("--validation_model", type=str, default="mimo-v2-flash", help="用于校验的模型名称")
-    parser.add_argument("--save_only_correct", action="store_true", default=False, help="只保存校验通过的样本（默认保存所有样本）")
-    parser.add_argument("--enable_v_top_layer", action="store_true", default=True, help="启用 V_top_layer 捕获（默认启用）")
+    parser.add_argument("--save_every", type=int, default=50, help="Save metadata checkpoint every n samples")
+    parser.add_argument("--save_format", type=str, default="json", choices=["json", "jsonl"], help="Save format: json (single file) or jsonl (one sample per line)")
+    parser.add_argument("--enable_validation", action="store_true", default=True, help="Enable answer validation (default enabled)")
+    parser.add_argument("--disable_validation", action="store_false", dest="enable_validation", help="Disable answer validation")
+    parser.add_argument("--validation_api_key", type=str, default=None, help="OpenRouter API key (default uses built-in key)")
+    parser.add_argument("--validation_model", type=str, default="mimo-v2-flash", help="Model name for validation")
+    parser.add_argument("--save_only_correct", action="store_true", default=False, help="Only save samples that passed validation (default saves all samples)")
+    parser.add_argument("--enable_v_top_layer", action="store_true", default=True, help="Enable V_top_layer capture (default enabled)")
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
@@ -406,25 +406,25 @@ def main():
         if args.random_seed is not None:
             used_seed = args.random_seed
             random.seed(args.random_seed)
-            print(f"使用随机数种子: {args.random_seed}")
+            print(f"Using random seed: {args.random_seed}")
         else:
             import time
             used_seed = int(time.time())
             random.seed(used_seed)
-            print(f"使用时间戳作为随机数种子: {used_seed}")
+            print(f"Using timestamp as random seed: {used_seed}")
         indices = list(range(len(data)))
         random.shuffle(indices)
         data = [data[i] for i in indices]
-        print(f"数据已随机打乱，共 {len(data)} 个样本")
+        print(f"Data shuffled, {len(data)} samples")
     else:
-        print(f"保持原始数据顺序，共 {len(data)} 个样本")
+        print(f"Keeping original data order, {len(data)} samples")
     if args.start_idx > 0:
         data = data[args.start_idx:]
-        print(f"从索引 {args.start_idx} 开始处理，剩余 {len(data)} 个样本")
+        print(f"Starting from index {args.start_idx}, {len(data)} samples remaining")
     if args.max_samples is not None and args.max_samples > 0:
         original_count = len(data)
         data = data[:args.max_samples]
-        print(f"限制处理数量为 {args.max_samples} 个样本（原始: {original_count}）")
+        print(f"Limiting processing to {args.max_samples} samples (original: {original_count})")
     processing_params = {
         "extraction_method": args.method,
         "random_seed": used_seed,
@@ -433,17 +433,17 @@ def main():
         "max_samples": args.max_samples,
         "total_samples_loaded": len(data),
     }
-    print(f"正在加载模型: {args.model_path}")
-    print(f"使用提取方法: {args.method}")
+    print(f"Loading model: {args.model_path}")
+    print(f"Using extraction method: {args.method}")
     if torch.cuda.is_available():
         gpu_count = torch.cuda.device_count()
-        print(f"[GPU诊断] 检测到 {gpu_count} 个GPU:")
+        print(f"[GPU diagnosis] Detected {gpu_count} GPUs:")
         for i in range(gpu_count):
             props = torch.cuda.get_device_properties(i)
             total_memory = props.total_memory / 1024**3
-            print(f"  GPU {i}: {props.name}, 总显存: {total_memory:.2f}GB")
+            print(f"  GPU {i}: {props.name}, Total memory: {total_memory:.2f}GB")
     else:
-        print("[GPU诊断] 未检测到CUDA设备")
+        print("[GPU diagnosis] No CUDA devices detected")
     if args.method == "gradient":
         extractor = TeacherTrajectoryExtractor(
             model_path=args.model_path,
@@ -457,21 +457,21 @@ def main():
             dtype=torch.bfloat16
         )
     else:
-        raise ValueError(f"未知的提取方法: {args.method}")
-    print("模型加载完成！")
+        raise ValueError(f"Unknown extraction method: {args.method}")
+    print("Model loaded!")
     if torch.cuda.is_available():
-        print(f"[GPU诊断] 模型加载后的GPU使用情况:")
+        print(f"[GPU diagnosis] GPU usage after model loading:")
         if hasattr(extractor.model, 'hf_device_map') and extractor.model.hf_device_map is not None:
-            print(f"  设备分布: {extractor.model.hf_device_map}")
+            print(f"  Device distribution: {extractor.model.hf_device_map}")
             for i in range(torch.cuda.device_count()):
                 alloc = torch.cuda.memory_allocated(i) / 1024**3
                 reserv = torch.cuda.memory_reserved(i) / 1024**3
-                print(f"  GPU {i}: 已分配={alloc:.2f}GB, 已保留={reserv:.2f}GB")
+                print(f"  GPU {i}: Allocated={alloc:.2f}GB, Reserved={reserv:.2f}GB")
         else:
-            print("  警告：模型未使用多GPU，只使用了单GPU模式")
+            print("  Warning: Model not using multiple GPUs, only using single GPU mode")
             alloc = torch.cuda.memory_allocated() / 1024**3
             reserv = torch.cuda.memory_reserved() / 1024**3
-            print(f"  GPU 0: 已分配={alloc:.2f}GB, 已保留={reserv:.2f}GB")
+            print(f"  GPU 0: Allocated={alloc:.2f}GB, Reserved={reserv:.2f}GB")
     if args.output_lavit15k_root:
         build_lavit15k_from_viscot(
             extractor=extractor,
@@ -503,18 +503,18 @@ def main():
         return
     results = []
     for i, sample in enumerate(data):
-        print(f"\n[{i+1}/{len(data)}] 处理样本...")
+        print(f"\n[{i+1}/{len(data)}] Processing sample...")
         if torch.cuda.is_available():
             if hasattr(extractor.model, 'hf_device_map') and extractor.model.hf_device_map is not None:
-                print(f"[显存状态-处理前] 所有GPU显存使用:")
+                print(f"[GPU memory status - before processing] All GPU memory usage:")
                 for gpu_id in range(torch.cuda.device_count()):
                     alloc = torch.cuda.memory_allocated(gpu_id) / 1024**3
                     reserv = torch.cuda.memory_reserved(gpu_id) / 1024**3
-                    print(f"  GPU {gpu_id}: 已分配={alloc:.2f}GB, 已保留={reserv:.2f}GB")
+                    print(f"  GPU {gpu_id}: Allocated={alloc:.2f}GB, Reserved={reserv:.2f}GB")
             else:
                 alloc = torch.cuda.memory_allocated() / 1024**3
                 reserv = torch.cuda.memory_reserved() / 1024**3
-                print(f"[显存状态-处理前] GPU 0: 已分配={alloc:.2f}GB, 已保留={reserv:.2f}GB")
+                print(f"[GPU memory status - before processing] GPU 0: Allocated={alloc:.2f}GB, Reserved={reserv:.2f}GB")
         result = process_sample(
             sample=sample,
             extractor=extractor,
@@ -555,12 +555,12 @@ def main():
             }
             with open(checkpoint_file, 'w', encoding='utf-8') as f:
                 json.dump(checkpoint_data, f, ensure_ascii=False, indent=2)
-            print(f"已保存检查点到 {checkpoint_file} ({len(results)} 个样本)")
-    print(f"\n正在保存结果到 {args.output_dir}...")
+            print(f"Saved checkpoint to {checkpoint_file} ({len(results)} samples)")
+    print(f"\nSaving results to {args.output_dir}...")
     if args.save_only_correct and args.enable_validation:
         filtered_results = [r for r in results if r.get("validation", {}).get("is_correct", False)]
-        print(f"  过滤前: {len(results)} 个样本")
-        print(f"  过滤后: {len(filtered_results)} 个样本（仅校验通过的）")
+        print(f"  Before filtering: {len(results)} samples")
+        print(f"  After filtering: {len(filtered_results)} samples (only passed validation)")
     else:
         filtered_results = results
     if args.save_format == "json":
@@ -571,28 +571,28 @@ def main():
         }
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, ensure_ascii=False, indent=2)
-        print(f"已保存 {len(filtered_results)} 个样本到 {output_file}")
+        print(f"Saved {len(filtered_results)} samples to {output_file}")
     else:
         output_file = os.path.join(args.output_dir, "trajectories.jsonl")
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(json.dumps({"type": "metadata", "processing_params": processing_params}, ensure_ascii=False) + '\n')
             for result in filtered_results:
                 f.write(json.dumps(result, ensure_ascii=False) + '\n')
-        print(f"已保存 {len(filtered_results)} 个样本到 {output_file}")
+        print(f"Saved {len(filtered_results)} samples to {output_file}")
     successful = sum(1 for r in results if "error" not in r and r.get("skipped", False) == False)
     failed = sum(1 for r in results if "error" in r)
     skipped = sum(1 for r in results if r.get("skipped", False) == True)
     total = len(results)
-    print(f"\n处理完成！")
-    print(f"  成功（已保存轨迹）: {successful}")
-    print(f"  跳过（答案校验未通过）: {skipped}")
-    print(f"  失败（处理错误）: {failed}")
-    print(f"  总计: {total}")
+    print(f"\nProcessing completed!")
+    print(f"  Success (saved trajectories): {successful}")
+    print(f"  Skipped (answer validation failed): {skipped}")
+    print(f"  Failed (processing error): {failed}")
+    print(f"  Total: {total}")
     if args.enable_validation:
         validated_correct = sum(1 for r in results if r.get("validation", {}).get("is_correct", False))
         validated_incorrect = sum(1 for r in results if "validation" in r and not r.get("validation", {}).get("is_correct", True))
-        print(f"\n校验统计:")
-        print(f"  校验通过: {validated_correct}")
-        print(f"  校验未通过: {validated_incorrect}")
+        print(f"\nValidation statistics:")
+        print(f"  Validation passed: {validated_correct}")
+        print(f"  Validation failed: {validated_incorrect}")
 if __name__ == "__main__":
     main()

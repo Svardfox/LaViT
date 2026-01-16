@@ -4,7 +4,11 @@ from PIL import Image
 import sys
 import os
 # Add training/src to path to import modeling_lavit
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# Get the directory containing this file (evaluation/utils)
+utils_dir = os.path.dirname(os.path.abspath(__file__))
+# Go up to evaluation, then to project root (LaViT_github)
+evaluation_dir = os.path.dirname(utils_dir)
+project_root = os.path.dirname(evaluation_dir)
 training_src_path = os.path.join(project_root, "training", "src")
 sys.path.insert(0, training_src_path)
 from modeling_lavit import LaViTQwen2VL, LaViTConfig

@@ -89,14 +89,14 @@ def analyze_results(
 ) -> None:
     stats = calculate_accuracy(results_file, method=method)
     print("=" * 60)
-    print("评估结果统计")
+    print("Evaluation Results")
     print("=" * 60)
-    print(f"总样本数: {stats['total']}")
-    print(f"正确数: {stats['correct']}")
-    print(f"错误数: {stats['wrong']}")
-    print(f"准确率: {stats['accuracy']:.2f}%")
+    print(f"Total Samples: {stats['total']}")
+    print(f"Correct: {stats['correct']}")
+    print(f"Wrong: {stats['wrong']}")
+    print(f"Accuracy: {stats['accuracy']:.2f}%")
     if stats['failed_extraction'] > 0:
-        print(f"无法提取答案: {stats['failed_extraction']}")
+        print(f"Failed Extraction: {stats['failed_extraction']}")
     print("=" * 60)
     correct_examples = []
     wrong_examples = []
@@ -121,22 +121,22 @@ def analyze_results(
             if len(correct_examples) >= show_examples and len(wrong_examples) >= show_examples:
                 break
     if correct_examples:
-        print(f"\n正确示例 (前{len(correct_examples)}个):")
+        print(f"\nCorrect Examples (top {len(correct_examples)}):")
         for i, ex in enumerate(correct_examples, 1):
             print(f"\n  {i}. ID: {ex['id']}")
-            print(f"     问题: {ex['prompt']}")
+            print(f"     Question: {ex['prompt']}")
             print(f"     GT: {ex['gt']} | Pred: {ex['pred']}")
     if wrong_examples:
-        print(f"\n错误示例 (前{len(wrong_examples)}个):")
+        print(f"\nWrong Examples (top {len(wrong_examples)}):")
         for i, ex in enumerate(wrong_examples, 1):
             print(f"\n  {i}. ID: {ex['id']}")
-            print(f"     问题: {ex['prompt']}")
+            print(f"     Question: {ex['prompt']}")
             print(f"     GT: {ex['gt']} | Pred: {ex['pred']}")
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="计算评估结果的准确率")
-    parser.add_argument("--results_file", type=str, required=True, help="评估结果 JSONL 文件路径")
-    parser.add_argument("--method", type=str, default="regex", help="判断方法 (默认: regex)")
-    parser.add_argument("--show_examples", type=int, default=5, help="显示示例数量")
+    parser = argparse.ArgumentParser(description="Calculate evaluation accuracy")
+    parser.add_argument("--results_file", type=str, required=True, help="Path to evaluation results JSONL file")
+    parser.add_argument("--method", type=str, default="regex", help="Evaluation method (default: regex)")
+    parser.add_argument("--show_examples", type=int, default=5, help="Number of examples to show")
     args = parser.parse_args()
     analyze_results(args.results_file, method=args.method, show_examples=args.show_examples)

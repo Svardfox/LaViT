@@ -25,7 +25,8 @@ def main():
         adapter = get_adapter(args.dataset, args.data_root, task_name=args.task_name)
     except Exception as e:
         print(f"Failed to load adapter: {e}")
-        return
+        import sys
+        sys.exit(1)
     print(f"Found {len(adapter)} samples.")
     print(f"Loading model from {args.checkpoint}")
     evaluator = LaViTEvaluator(args.checkpoint)
