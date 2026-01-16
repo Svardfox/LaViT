@@ -1,5 +1,13 @@
 # LaViT: Aligning Latent Visual Thoughts for Multi-modal Reasoning
 
+<div align="center">
+
+[![Paper](https://img.shields.io/badge/Paper-arXiv:2601.10129-b31b1b.svg)](https://arxiv.org/abs/2601.10129)
+[![Model](https://img.shields.io/badge/🤗%20HuggingFace-Model-yellow.svg)](https://huggingface.co/Svard/LaViT-3B)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+</div>
+
 This repository contains the official implementation of **LaViT**, a method for training vision-language models through visual thought trajectory supervision. LaViT extracts visual reasoning processes from large teacher models and uses them as supervision signals to train smaller, more efficient student models.
 
 
@@ -182,7 +190,7 @@ This project is implemented based on the Qwen2.5-VL model. Thanks to the support
 
 ## 📋 TODO
 
-- [ ] Release LaViT-3B model weights
+- [x] Release LaViT-3B model weights
 - [ ] Upload complete training dataset LaViT-15k
 
 ## 📖 Citation
@@ -200,3 +208,9 @@ If you find this repository useful in your research, please consider citing our 
       url={https://arxiv.org/abs/2601.10129}, 
 }
 ```
+
+## 🔗 Related Links
+
+- **Paper**: [arXiv:2601.10129](https://arxiv.org/abs/2601.10129)
+- **HuggingFace Model**: [Svard/LaViT-3B](https://huggingface.co/Svard/LaViT-3B)
+- **Base Model**: [Qwen2.5-VL-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct)
