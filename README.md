@@ -184,3 +184,19 @@ This project is implemented based on the Qwen2.5-VL model. Thanks to the support
 
 - [ ] Release LaViT-3B model weights
 - [ ] Upload complete training dataset LaViT-15k
+
+## 📖 Citation
+
+If you find this repository useful in your research, please consider citing our paper:
+
+```bibtex
+@misc{wu2026lavitaligninglatentvisual,
+      title={LaViT: Aligning Latent Visual Thoughts for Multi-modal Reasoning}, 
+      author={Linquan Wu and Tianxiang Jiang and Yifei Dong and Haoyu Yang and Fengji Zhang and Shichaang Meng and Ai Xuan and Linqi Song and Jacky Keung},
+      year={2026},
+      eprint={2601.10129},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2601.10129}, 
+}
+```
